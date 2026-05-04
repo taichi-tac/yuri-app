@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// NextAuth required models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  isAdmin       Boolean   @default(false)
+  accounts      Account[]
+  sessions      Session[]
+  histories     CorrectionHistory[]
+  createdAt     DateTime  @default(now())
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// 動画・教材ライブラリ
+model Video {
+  id              String   @id @default(cuid())
+  title           String
+  videoUrl        String?
+  materialUrl     String?
+  platform        String   // "youtube" | "loom" | "zoom" | "other"
+  sheet           String   // "文法カテゴリ" | "全体配信" | "文法解説" | "例文の解説" | "もくもく勉強会資料" | "学習法関連"
+  grammarCategory String?  // "tense" | "perfect" | ... (文法カテゴリYouTube動画のみ)
+  priority        Int      @default(2) // 1=YouTube文法動画(最優先), 2=その他
+  keywords        String   // JSON配列 キーワード（タイトルから生成）
+  createdAt       DateTime @default(now())
+}
+
+// アプリ設定（APIキーなど）
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+// アプリ固有モデル
+model CorrectionHistory {
+  id                   String   @id @default(cuid())
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  originalText         String
+  correctedText        String
+  level                String   // "beginner" | "intermediate"
+  pointsJson           String   // CorrectionPoint[] をJSON文字列で保存
+  relatedContentIdsJson String  // GrammarCategory[] をJSON文字列で保存
+  alternativeExpressionsJson String // string[] をJSON文字列で保存
+  practiceAdviceJson   String   // PracticeAdvice[] をJSON文字列で保存
+  hasImage             Boolean  @default(false)
+  createdAt            DateTime @default(now())
+}
