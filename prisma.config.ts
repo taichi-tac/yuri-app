@@ -1,18 +1,17 @@
 import { defineConfig } from "prisma/config";
 import path from "path";
-import { PrismaLibSql } from "@prisma/adapter-libsql";
-import { createClient } from "@libsql/client";
 
 const tursoUrl = process.env.TURSO_DATABASE_URL;
 const tursoToken = process.env.TURSO_AUTH_TOKEN;
 
-function makeAdapter() {
+// For Turso, embed auth token in URL as query param for Prisma config
+function getDatasourceUrl() {
   if (tursoUrl) {
-    const client = createClient({ url: tursoUrl, authToken: tursoToken });
-    return new PrismaLibSql(client);
+    const url = new URL(tursoUrl);
+    if (tursoToken) url.searchParams.set("authToken", tursoToken);
+    return url.toString();
   }
-  const client = createClient({ url: `file:${path.join(__dirname, "prisma/dev.db")}` });
-  return new PrismaLibSql(client);
+  return `file:${path.join(__dirname, "prisma/dev.db")}`;
 }
 
 export default defineConfig({
@@ -20,5 +19,7 @@ export default defineConfig({
   migrations: {
     path: "prisma/migrations",
   },
-  adapter: makeAdapter(),
+  datasource: {
+    url: getDatasourceUrl(),
+  },
 });
