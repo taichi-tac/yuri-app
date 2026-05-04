@@ -1,14 +1,15 @@
 import { PrismaClient } from "./generated/prisma";
 import { PrismaLibSql } from "@prisma/adapter-libsql";
+import { createClient } from "@libsql/client";
 
-// Prisma v7 requires an adapter for SQLite
-// Use libsql adapter which supports file-based SQLite
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
 function createPrismaClient() {
-  const adapter = new PrismaLibSql({
-    url: "file:prisma/dev.db",
-  });
+  const url = process.env.TURSO_DATABASE_URL ?? `file:${process.cwd()}/prisma/dev.db`;
+  const authToken = process.env.TURSO_AUTH_TOKEN;
+
+  const libsql = createClient({ url, authToken });
+  const adapter = new PrismaLibSql(libsql);
   return new PrismaClient({ adapter });
 }
 
