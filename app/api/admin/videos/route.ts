@@ -1,17 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "yuri-admin";
-
-function checkAuth(req: NextRequest): boolean {
-  const pwd = req.headers.get("x-admin-password");
-  console.log("[auth] received pwd:", JSON.stringify(pwd), "expected:", JSON.stringify(ADMIN_PASSWORD));
-  return !!pwd && pwd === ADMIN_PASSWORD;
-}
-
-function unauthorized() {
-  return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-}
+import { checkAdminAuth, unauthorized } from "@/lib/settings";
 
 function detectPlatform(url: string | null): string {
   if (!url) return "other";
@@ -23,7 +12,7 @@ function detectPlatform(url: string | null): string {
 
 // GET: 動画一覧
 export async function GET(req: NextRequest) {
-  if (!checkAuth(req)) return unauthorized();
+  if (!await checkAdminAuth(req)) return unauthorized();
   const videos = await prisma.video.findMany({
     orderBy: [{ priority: "asc" }, { sheet: "asc" }, { createdAt: "asc" }],
   });
@@ -32,7 +21,7 @@ export async function GET(req: NextRequest) {
 
 // POST: 動画追加
 export async function POST(req: NextRequest) {
-  if (!checkAuth(req)) return unauthorized();
+  if (!await checkAdminAuth(req)) return unauthorized();
   const body = await req.json().catch(() => null);
   if (!body || !body.title) {
     return NextResponse.json({ error: "title is required" }, { status: 400 });
@@ -57,7 +46,7 @@ export async function POST(req: NextRequest) {
 
 // DELETE: 動画削除
 export async function DELETE(req: NextRequest) {
-  if (!checkAuth(req)) return unauthorized();
+  if (!await checkAdminAuth(req)) return unauthorized();
   const { id } = await req.json().catch(() => ({}));
   if (!id) {
     return NextResponse.json({ error: "id is required" }, { status: 400 });
@@ -68,7 +57,7 @@ export async function DELETE(req: NextRequest) {
 
 // PATCH: 動画更新
 export async function PATCH(req: NextRequest) {
-  if (!checkAuth(req)) return unauthorized();
+  if (!await checkAdminAuth(req)) return unauthorized();
   const body = await req.json().catch(() => null);
   if (!body?.id) {
     return NextResponse.json({ error: "id is required" }, { status: 400 });

@@ -1,21 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSetting, setSetting } from "@/lib/settings";
-
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "yuri-admin";
+import { getSetting, setSetting, checkAdminAuth, unauthorized } from "@/lib/settings";
 
 function maskKey(key: string): string {
   return key.slice(0, 10) + "••••••••••••••••••••";
 }
 
-function checkAuth(req: NextRequest): boolean {
-  return req.headers.get("x-admin-password") === ADMIN_PASSWORD;
-}
-
 // GET: 各APIキーの設定状態を返す（キー本体は返さない）
 export async function GET(req: NextRequest) {
-  if (!checkAuth(req)) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  if (!await checkAdminAuth(req)) return unauthorized();
 
   const [anthropicKey, openaiKey] = await Promise.all([
     getSetting("ANTHROPIC_API_KEY"),
@@ -36,9 +28,7 @@ export async function GET(req: NextRequest) {
 
 // POST: APIキーをDBに保存
 export async function POST(req: NextRequest) {
-  if (!checkAuth(req)) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  if (!await checkAdminAuth(req)) return unauthorized();
 
   const body = await req.json().catch(() => null);
   if (!body) {

@@ -22,6 +22,10 @@ export default function AdminPage() {
   const [saveStatus, setSaveStatus] = useState<Status>("idle");
   const [saveMessage, setSaveMessage] = useState("");
 
+  const [newPassword, setNewPassword] = useState("");
+  const [pwdStatus, setPwdStatus] = useState<Status>("idle");
+  const [pwdMessage, setPwdMessage] = useState("");
+
   const login = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError("");
@@ -76,6 +80,33 @@ export default function AdminPage() {
     }
   };
 
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPassword.trim()) return;
+    setPwdStatus("loading");
+    setPwdMessage("");
+
+    const res = await fetch("/api/admin/password", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-password": password,
+      },
+      body: JSON.stringify({ newPassword: newPassword.trim() }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      setPwdStatus("error");
+      setPwdMessage(data.error ?? "変更に失敗しました");
+    } else {
+      setPwdStatus("success");
+      setPwdMessage("パスワードを変更しました。次回ログインから新しいパスワードが有効です。");
+      setPassword(newPassword.trim()); // 現在のセッションのパスワードも更新
+      setNewPassword("");
+    }
+  };
+
   if (!authed) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center px-4">
@@ -108,7 +139,7 @@ export default function AdminPage() {
             </button>
           </form>
           <p className="mt-4 text-xs text-gray-400 text-center">
-            デフォルトパスワード: <code className="font-mono bg-gray-100 px-1 rounded">yuri-admin</code>
+            初期パスワード: <code className="font-mono bg-gray-100 px-1 rounded">yuri-admin</code>
           </p>
         </div>
       </div>
@@ -201,7 +232,6 @@ export default function AdminPage() {
             </p>
           </div>
 
-          {/* 保存ボタン・メッセージ */}
           {saveMessage && (
             <div className={`rounded-xl px-4 py-3 text-sm ${
               saveStatus === "success"
@@ -217,7 +247,38 @@ export default function AdminPage() {
             disabled={(!anthropicKey.trim() && !openaiKey.trim()) || saveStatus === "loading"}
             className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-200 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-colors"
           >
-            {saveStatus === "loading" ? "保存中…" : "保存する"}
+            {saveStatus === "loading" ? "保存中…" : "APIキーを保存する"}
+          </button>
+        </form>
+
+        {/* 管理者パスワード変更 */}
+        <form onSubmit={handlePasswordChange} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
+          <div>
+            <h2 className="text-sm font-bold text-gray-700 mb-1">管理者パスワード変更</h2>
+            <p className="text-xs text-gray-400">新しいパスワードを設定します。DBに保存されます。</p>
+          </div>
+          <input
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder="新しいパスワード（6文字以上）"
+            className="w-full rounded-xl border border-gray-200 p-3 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+          />
+          {pwdMessage && (
+            <div className={`rounded-xl px-4 py-3 text-sm ${
+              pwdStatus === "success"
+                ? "bg-green-50 border border-green-100 text-green-700"
+                : "bg-red-50 border border-red-100 text-red-600"
+            }`}>
+              {pwdMessage}
+            </div>
+          )}
+          <button
+            type="submit"
+            disabled={!newPassword.trim() || pwdStatus === "loading"}
+            className="w-full bg-gray-700 hover:bg-gray-800 disabled:bg-gray-200 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-colors"
+          >
+            {pwdStatus === "loading" ? "変更中…" : "パスワードを変更する"}
           </button>
         </form>
 
@@ -225,7 +286,7 @@ export default function AdminPage() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 text-sm text-gray-500 space-y-2">
           <p className="font-semibold text-gray-700">注意事項</p>
           <ul className="space-y-1 list-disc list-inside">
-            <li>APIキーはデータベースに保存されます</li>
+            <li>APIキーとパスワードはデータベースに保存されます</li>
             <li>保存後すぐに反映されます（再起動不要）</li>
             <li>このページのURLは他の人に共有しないでください</li>
           </ul>
