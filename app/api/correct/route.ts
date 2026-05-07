@@ -212,31 +212,40 @@ export async function POST(req: NextRequest) {
   // 2. 同カテゴリの補足動画（Loom等）
   // 3. 修正点のキーワードに一致する動画
   const relatedCategories = parsed.relatedContentIds ?? [];
-  const correctionKeywords = (parsed.points ?? [])
-    .flatMap((p) => [p.original, p.corrected, p.explanation])
-    .join(" ")
-    .toLowerCase();
 
   const allVideos = await prisma.video.findMany({
     where: { videoUrl: { not: null } },
     orderBy: [{ priority: "asc" }, { platform: "asc" }],
   });
 
-  // カテゴリ一致の動画を収集（YouTube優先）
-  const categoryMatches = allVideos.filter(
-    (v) => v.grammarCategory && relatedCategories.includes(v.grammarCategory as GrammarCategory)
-  );
+  // カテゴリ一致の動画を収集（YouTube優先）+ 理由ラベル付き
+  type VideoWithReason = typeof allVideos[number] & { reason: string };
 
-  // キーワード一致の動画（カテゴリ一致以外から）
+  const categoryMatches: VideoWithReason[] = allVideos
+    .filter((v) => v.grammarCategory && relatedCategories.includes(v.grammarCategory as GrammarCategory))
+    .map((v) => ({
+      ...v,
+      reason: `${CATEGORY_LABELS[v.grammarCategory!] ?? v.grammarCategory}の修正があったため`,
+    }));
+
+  // キーワード一致: タイトルのキーワードが修正前・修正後の表現と一致するもののみ
   const categoryMatchIds = new Set(categoryMatches.map((v) => v.id));
-  const keywordMatches = allVideos.filter((v) => {
-    if (categoryMatchIds.has(v.id)) return false;
-    const kws: string[] = JSON.parse(v.keywords ?? "[]");
-    return kws.some((kw) => correctionKeywords.includes(kw.toLowerCase()));
-  });
+  const correctionExpressions = (parsed.points ?? [])
+    .flatMap((p) => [p.original.toLowerCase(), p.corrected.toLowerCase()])
+    .filter(Boolean);
+
+  const keywordMatches: VideoWithReason[] = allVideos
+    .filter((v) => {
+      if (categoryMatchIds.has(v.id)) return false;
+      const kws: string[] = JSON.parse(v.keywords ?? "[]");
+      return kws.some((kw) =>
+        correctionExpressions.some((expr) => expr.includes(kw.toLowerCase()) || kw.toLowerCase().includes(expr))
+      );
+    })
+    .map((v) => ({ ...v, reason: `「${v.title}」に関連する表現の修正があったため` }));
 
   // 合計最大5件、YouTube優先で並べる
-  const relatedVideos = [...categoryMatches, ...keywordMatches]
+  const relatedContents = [...categoryMatches, ...keywordMatches]
     .sort((a, b) => {
       if (a.priority !== b.priority) return a.priority - b.priority;
       const aYt = a.platform === "youtube" ? 0 : 1;
@@ -244,8 +253,6 @@ export async function POST(req: NextRequest) {
       return aYt - bYt;
     })
     .slice(0, 5);
-
-  const relatedContents = relatedVideos;
 
   // ログイン済みユーザーの履歴を保存（未ログインは保存しない）
   const session = await auth();

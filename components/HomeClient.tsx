@@ -12,6 +12,7 @@ interface VideoItem {
   materialUrl: string | null;
   platform: string;
   sheet: string;
+  reason?: string;
 }
 
 type ResultWithContents = CorrectionResult & { relatedContents: VideoItem[] };

@@ -10,6 +10,7 @@ interface VideoItem {
   materialUrl: string | null;
   platform: string;
   sheet: string;
+  reason?: string;
 }
 
 interface Props {
@@ -167,6 +168,9 @@ export default function CorrectionResultView({ result, originalText, originalIma
 
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-gray-800 text-sm mb-1">{video.title}</p>
+                      {video.reason && (
+                        <p className="text-xs text-blue-500 mb-1">💡 {video.reason}</p>
+                      )}
                       <p className="text-xs text-gray-400 mb-2">{video.sheet}</p>
                       <div className="flex flex-wrap gap-2">
                         {video.videoUrl && (
