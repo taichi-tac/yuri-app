@@ -15,7 +15,7 @@ export default async function Home() {
             Y
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-base font-bold text-gray-800">英語添削AI</h1>
+            <h1 className="text-base font-bold text-gray-800">Study Bubble AI</h1>
           </div>
           <div className="flex items-center gap-3 flex-shrink-0">
             <a href="/history" className="text-xs text-blue-500 hover:underline">履歴</a>

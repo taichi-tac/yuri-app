@@ -7,7 +7,7 @@ export default function LoginPage() {
         <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center text-white font-bold text-xl mx-auto mb-4">
           Y
         </div>
-        <h1 className="text-xl font-bold text-gray-800 mb-1">英語添削AI</h1>
+        <h1 className="text-xl font-bold text-gray-800 mb-1">Study Bubble AI</h1>
         <p className="text-sm text-gray-400 mb-8">Googleアカウントでログインしてください</p>
 
         <form

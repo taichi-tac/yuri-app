@@ -42,8 +42,8 @@ export default function InputForm({ onSubmit, loading }: Props) {
   };
 
   const examples = [
-    "I have went to Tokyo yesterday.",
-    "She don't know the answer.",
+    "I went to Tokyo last week.",
+    "I have been to France.",
     "I am interesting in English.",
   ];
 
@@ -97,7 +97,7 @@ export default function InputForm({ onSubmit, loading }: Props) {
           value={text}
           onChange={(e) => setText(e.target.value)}
           rows={5}
-          placeholder="例: I have went to Tokyo yesterday."
+          placeholder="例: I went to Tokyo last week."
           className="w-full rounded-xl border border-gray-200 p-4 text-base shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 resize-none"
           disabled={loading}
         />
